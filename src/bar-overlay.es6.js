@@ -97,21 +97,34 @@ const init = () => {
   container.classList.add(`ui-${settings.uiSize}`);
 }
 
-const onUpdate = (event) => {
+const container = document.querySelector('#container');
+
+const onUpdate = _.throttle((event) => {
   const parseData = event.detail;
-  const container = document.querySelector('#container');
     if(!parseData.isActive) {
       container.classList.remove('active');
     } else {
       try {
         container.classList.add('active');
 
-        let topDPS = Math.max.apply(Math, Object.values(parseData.Combatant).map((member) => {
+        let combatants = {};
+        const keys = _.keys(parseData.Combatant);
+
+        if(keys.length < 12) {
+          combatants = _.extend(parseData.Combatant);
+        } else {
+          combatants = {
+            'you': _.find(parseData.Combatant, (c) => c.name.toLowerCase() === 'you'),
+            'top': _.maxBy(parseData.Combatant (c) => c.name.toLowerCase() === 'you' ? 0 : c.encdps)
+          };
+        }
+
+        let topDPS = Math.max.apply(Math, Object.values(combatants).map((member) => {
           return member.encdps; 
         }));
         if(topDPS === Infinity) topDPS = 0.000001;
 
-        let topHPS = Math.max.apply(Math, Object.values(parseData.Combatant).map((member) => {
+        let topHPS = Math.max.apply(Math, Object.values(combatants).map((member) => {
           return member.enchps; 
         }));
         if(topHPS === Infinity) topHPS = 0.000001;
@@ -119,15 +132,15 @@ const onUpdate = (event) => {
         let encDPS = parseData.Encounter.encdps;
         if(encDPS === Infinity) encDPS = 0;
 
-        const combatants = Object.keys(parseData.Combatant);
-        const ownData = parseData.Combatant[combatants.find((name) => {
+        const combatants = Object.keys(combatants);
+        const ownData = combatants[combatants.find((name) => {
             return name.toLowerCase() === 'you';
         })];
 
         const {Job: ownJob} = ownData;
         const ownRole = Object.keys(settings.roles).find((role) => settings.roles[role].contains(ownJob.toUpperCase())) || 'dps';
 
-        const cleanData = _.compact(_.map(parseData.Combatant, (member) => {
+        const cleanData = _.compact(_.map(combatants, (member) => {
           let {name, Job: job, encdps: dps, enchps: hps, 'crithit%': crit, 'OverHealPct': overheal} = member;
 
           const role = Object.keys(settings.roles).find((role) => settings.roles[role].contains(job.toUpperCase())) || 'dps';
@@ -197,7 +210,7 @@ const onUpdate = (event) => {
         console.log(e);
       }
     }
-};
+}, 100);
 
 init();
 document.addEventListener('onOverlayDataUpdate', onUpdate);
