@@ -27,6 +27,7 @@ Before starting, it is a good idea to customize a few settings. These can be fou
 ## FAQ
 
 **Why does the font look different than the ingame one?**
+
 This is actually a licensing issue. The ingame font used is called Eurostile Extended, and is actually a paid font. I can't upload it without risk of the men in suits offering me a nice grave. However, if you happen to acquire the font, you just need to place it within the `lib/` folder as `eurostile-ext.ttf`, and it should automatically be loaded by the css (may require reloading the FFXIV Overlay plugin if you currently have it running)
 
 ## Roadmap
