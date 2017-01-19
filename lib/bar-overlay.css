@@ -1,0 +1,98 @@
+@font-face {
+    font-family: 'eurostile';
+    src: url('eurostile-ext.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'jura';
+    src: url('Jura-DemiBold.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+#container {
+    opacity: 0;
+    -webkit-transition: opacity 300ms ease-out;
+}
+
+#container.active {
+    opacity: 1;
+}
+
+#container.ui-1 {
+    zoom: calc(24 / 36);
+}
+#container.ui-2 {
+    zoom: calc(32 / 36);
+}
+#container.ui-3 {
+    zoom: calc(36 / 36);
+}
+#container.ui-4 {
+    zoom: calc(40 / 36);
+}
+#container.ui-5 {
+    zoom: calc(44 / 36);
+}
+#container.ui-6 {
+    zoom: calc(48 / 36);
+}
+#container.ui-7 {
+    zoom: calc(56 / 36);
+}
+
+.member-bar {
+    margin-bottom: 16px;
+}
+
+.hidden {
+    display: none!important;
+}
+
+.progress {
+        display: inline-block;
+        height: 5px;
+        background: #082d52;
+        width: 77px;
+        background-color: #082d52;
+        -webkit-box-shadow:-1px 0 4px #217AA2, 0 1px 4px #217AA2, 1px 0 4px #217AA2, 0 -1px 4px #217AA2;
+    }
+    .progress-bar {
+        -webkit-transition: width 300ms ease-out;
+        height: 100%;
+        width: 0%;
+        background-color: #fff;
+        -webkit-box-shadow: -1px 0 4px #217AA2, 0 1px 4px #217AA2, 1px 0 4px #217AA2, 0 -1px 4px #217AA2;
+    }
+    .progress-bar.healer {
+        background-color: #fff;
+        -webkit-box-shadow: -1px 0 4px #da8900, 0 1px 4px #da8900, 1px 0 4px #da8900, 0 -1px 4px #da8900;
+    }
+    .crit-bar {
+        -webkit-transition: width 300ms ease-out;
+        height: 100%;
+        width: 0%;
+        margin-top: -5px;
+        background-color: #217AA2;
+        -webkit-box-shadow: -1px 0 4px #FFF, 0 1px 4px #FFF, 1px 0 4px #FFF, 0 -1px 4px #FFF;
+    }
+    .crit-bar.healer {
+        background-color: #da8900;
+        -webkit-box-shadow: -1px 0 4px #fff, 0 1px 4px #fff, 1px 0 4px #fff, 0 -1px 4px #fff;
+    }
+
+label {
+    font-family: "eurostile", "jura";
+    -webkit-font-smoothing: antialiased;
+    font-size: 10px;
+    text-shadow: -1px 0 3px #217AA2, 0 1px 3px #217AA2, 1px 0 3px #217AA2, 0 -1px 3px #217AA2;
+    position: relative;
+    top: 7px;
+    right: 80px;
+    text-align: right;
+    color: white;
+    width:77px;
+    display: inline-block;
+}
