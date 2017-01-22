@@ -115,7 +115,7 @@ const onUpdate = _.throttle((event) => {
         } else {
           combatants = {
             'you': _.find(parseData.Combatant, (c) => c.name.toLowerCase() === 'you'),
-            'top': _.maxBy(parseData.Combatant (c) => c.name.toLowerCase() === 'you' ? 0 : c.encdps)
+            'top': _.maxBy(parseData.Combatant, (c) => c.name.toLowerCase() === 'you' ? 0 : c.encdps)
           };
         }
 
@@ -132,7 +132,6 @@ const onUpdate = _.throttle((event) => {
         let encDPS = parseData.Encounter.encdps;
         if(encDPS === Infinity) encDPS = 0;
 
-        const combatants = Object.keys(combatants);
         const ownData = combatants[combatants.find((name) => {
             return name.toLowerCase() === 'you';
         })];
@@ -194,12 +193,13 @@ const onUpdate = _.throttle((event) => {
             try {
               const data = sortedData[index];
               meter.toggle(true);
+              const name = !settings._showNames ? undefined : data.name.split(' ').map(n => n[0]).concat([Math.floor(data.dps)]).join(' ');
               if(data.showHPS) {
                 meter.setHealer(true);
-                meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal);
+                meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal, name);
               } else {
                 meter.setHealer(false);
-                meter.calcStates(data.dps, encDPS, data.crit, topDPS, undefined);
+                meter.calcStates(data.dps, encDPS, data.crit, topDPS, undefined, name);
               }
             } catch(e) {
               meter.calcStates(0, 0, 0, 1);

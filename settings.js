@@ -19,5 +19,8 @@ var JobSortSettings = {
 	uiSize: 3,
 
 	// Show rest of party
-	showParty: true
+	showParty: true,
+
+	// ====== DEBUG OPTIONS ======
+	_showNames: false
 }

@@ -104,7 +104,8 @@ var partyList = [];
 
 var init = function init() {
   var container = document.querySelector('#container');
-  for (var i = 0; i < 8; i++) {
+  var partyCount = settings.showParty ? 8 : 1;
+  for (var i = 0; i < partyCount; i++) {
     var meter = new Meter();
     partyList.push(meter);
     meter.appendTo(container);
@@ -112,21 +113,39 @@ var init = function init() {
   container.classList.add('ui-' + settings.uiSize);
 };
 
-var onUpdate = function onUpdate(event) {
+var container = document.querySelector('#container');
+
+var onUpdate = _.throttle(function (event) {
   var parseData = event.detail;
-  var container = document.querySelector('#container');
   if (!parseData.isActive) {
     container.classList.remove('active');
   } else {
+    try {
       (function () {
         container.classList.add('active');
 
-        var topDPS = Math.max.apply(Math, Object.values(parseData.Combatant).map(function (member) {
+        var combatants = {};
+        var keys = _.keys(parseData.Combatant);
+
+        if (keys.length < 12) {
+          combatants = _.extend(parseData.Combatant);
+        } else {
+          combatants = {
+            'you': _.find(parseData.Combatant, function (c) {
+              return c.name.toLowerCase() === 'you';
+            }),
+            'top': _.maxBy(parseData.Combatant, function (c) {
+              return c.name.toLowerCase() === 'you' ? 0 : c.encdps;
+            })
+          };
+        }
+
+        var topDPS = Math.max.apply(Math, Object.values(combatants).map(function (member) {
           return member.encdps;
         }));
         if (topDPS === Infinity) topDPS = 0.000001;
 
-        var topHPS = Math.max.apply(Math, Object.values(parseData.Combatant).map(function (member) {
+        var topHPS = Math.max.apply(Math, Object.values(combatants).map(function (member) {
           return member.enchps;
         }));
         if (topHPS === Infinity) topHPS = 0.000001;
@@ -134,8 +153,7 @@ var onUpdate = function onUpdate(event) {
         var encDPS = parseData.Encounter.encdps;
         if (encDPS === Infinity) encDPS = 0;
 
-        var combatants = Object.keys(parseData.Combatant);
-        var ownData = parseData.Combatant[combatants.find(function (name) {
+        var ownData = combatants[combatants.find(function (name) {
           return name.toLowerCase() === 'you';
         })];
 
@@ -145,7 +163,7 @@ var onUpdate = function onUpdate(event) {
           return settings.roles[role].contains(ownJob.toUpperCase());
         }) || 'dps';
 
-        var cleanData = _.compact(_.map(parseData.Combatant, function (member) {
+        var cleanData = _.compact(_.map(combatants, function (member) {
           var name = member.name,
               job = member.Job,
               dps = member.encdps,
@@ -207,12 +225,15 @@ var onUpdate = function onUpdate(event) {
             try {
               var data = sortedData[index];
               meter.toggle(true);
+              var name = !settings._showNames ? undefined : data.name.split(' ').map(function (n) {
+                return n[0];
+              }).concat([Math.floor(data.dps)]).join(' ');
               if (data.showHPS) {
                 meter.setHealer(true);
-                meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal);
+                meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal, name);
               } else {
                 meter.setHealer(false);
-                meter.calcStates(data.dps, encDPS, data.crit, topDPS, undefined);
+                meter.calcStates(data.dps, encDPS, data.crit, topDPS, undefined, name);
               }
             } catch (e) {
               meter.calcStates(0, 0, 0, 1);
@@ -220,8 +241,11 @@ var onUpdate = function onUpdate(event) {
           }
         });
       })();
+    } catch (e) {
+      console.log(e);
+    }
   }
-};
+}, 100);
 
 init();
 document.addEventListener('onOverlayDataUpdate', onUpdate);
