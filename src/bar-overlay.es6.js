@@ -68,6 +68,10 @@ class Meter {
     }
   }
 
+  reset() {
+    this.calcStates(0, 0, 0, 1, 1);
+  }
+
   toggle(state) {
     if(state === undefined) {
       state = !this.el.classList.contains('hidden');
@@ -85,6 +89,7 @@ class Meter {
 }
 
 const partyList = [];
+let lastUpdate;
 
 const init = () => {
   const container = document.querySelector('#container');
@@ -98,117 +103,128 @@ const init = () => {
 }
 
 const container = document.querySelector('#container');
+const logOnSleep = _.debounce(() => {
+  // Log last received event, for development and debug purposes
+  if(settings._logLastUpdate && lastUpdate) {
+    console.log(JSON.stringify(lastUpdate));
+    lastUpdate = undefined;
+  }
+}, 10000);
 
 const onUpdate = _.throttle((event) => {
   const parseData = event.detail;
     if(!parseData.isActive) {
       container.classList.remove('active');
+      partyList.forEach(meter => {
+        meter.toggle(false);
+        meter.reset();
+      });
     } else {
-      try {
-        container.classList.add('active');
+      lastUpdate = _.clone(parseData);
+      logOnSleep();
+      container.classList.add('active');
 
-        let combatants = {};
-        const keys = _.keys(parseData.Combatant);
+      let combatants = {};
+      const keys = _.keys(parseData.Combatant);
 
-        if(keys.length < 12) {
-          combatants = _.extend(parseData.Combatant);
+      if(keys.length < 12) {
+        combatants = _.extend(parseData.Combatant);
+      } else {
+        combatants = {
+          'you': _.find(parseData.Combatant, (c) => c.name.toLowerCase() === 'you'),
+          'top': _.maxBy(_.values(parseData.Combatant), (c) => c.name.toLowerCase() === 'you' && c ? 0 : c.encdps)
+        };
+      }
+
+      let topDPS = Math.max.apply(Math, Object.values(combatants).map((member) => {
+        return member.encdps; 
+      }));
+      if(topDPS === Infinity) topDPS = 0.000001;
+
+      let topHPS = Math.max.apply(Math, Object.values(combatants).map((member) => {
+        return member.enchps; 
+      }));
+      if(topHPS === Infinity) topHPS = 0.000001;
+
+      let encDPS = parseData.Encounter.encdps;
+      if(encDPS === Infinity) encDPS = 0;
+
+      const ownData = _.find(combatants, (data, name) => {
+          return name.toLowerCase() === 'you';
+      });
+
+      if(!ownData) return;
+
+      const {Job: ownJob} = ownData;
+      const ownRole = Object.keys(settings.roles).find((role) => settings.roles[role].contains(ownJob.toUpperCase())) || 'dps';
+
+      const cleanData = _.compact(_.map(combatants, (member) => {
+        let {name, Job: job, encdps: dps, enchps: hps, 'crithit%': crit, 'OverHealPct': overheal} = member;
+
+        const role = Object.keys(settings.roles).find((role) => settings.roles[role].contains(job.toUpperCase())) || 'dps';
+        const jobIndex = _.indexOf(settings.roles[role], job.toUpperCase());
+        const roleIndex = settings[ownRole].indexOf(role[0].toUpperCase());
+
+        dps = Number(dps);
+        if(!_.isFinite(dps)) dps = 0;
+        hps = Number(hps);
+        if(!_.isFinite(hps)) hps = 0;
+
+        crit = parseInt(crit.replace('%'));
+        if(!_.isFinite(crit)) crit = 0;
+
+        overheal = parseInt(overheal.replace('%'));
+        if(!_.isFinite(overheal)) {
+          overheal = 0;
         } else {
-          combatants = {
-            'you': _.find(parseData.Combatant, (c) => c.name.toLowerCase() === 'you'),
-            'top': _.maxBy(parseData.Combatant, (c) => c.name.toLowerCase() === 'you' ? 0 : c.encdps)
-          };
+          overheal = Math.max(100 - overheal, 0);
         }
 
-        let topDPS = Math.max.apply(Math, Object.values(combatants).map((member) => {
-          return member.encdps; 
-        }));
-        if(topDPS === Infinity) topDPS = 0.000001;
+        const isMe = name.toLowerCase() === 'you' ? -1 : 1;
+        const showHPS = settings.showHPS && role === 'healer';
 
-        let topHPS = Math.max.apply(Math, Object.values(combatants).map((member) => {
-          return member.enchps; 
-        }));
-        if(topHPS === Infinity) topHPS = 0.000001;
+        if(!job) return;
 
-        let encDPS = parseData.Encounter.encdps;
-        if(encDPS === Infinity) encDPS = 0;
+        return {
+          name,
+          role,
+          roleIndex,
+          job,
+          jobIndex,
 
-        const ownData = combatants[combatants.find((name) => {
-            return name.toLowerCase() === 'you';
-        })];
+          dps,
+          hps,
 
-        const {Job: ownJob} = ownData;
-        const ownRole = Object.keys(settings.roles).find((role) => settings.roles[role].contains(ownJob.toUpperCase())) || 'dps';
+          crit,
+          overheal,
 
-        const cleanData = _.compact(_.map(combatants, (member) => {
-          let {name, Job: job, encdps: dps, enchps: hps, 'crithit%': crit, 'OverHealPct': overheal} = member;
+          isMe,
+          showHPS
+        };
+      }));
 
-          const role = Object.keys(settings.roles).find((role) => settings.roles[role].contains(job.toUpperCase())) || 'dps';
-          const jobIndex = _.indexOf(settings.roles[role], job.toUpperCase());
-          const roleIndex = settings[ownRole].indexOf(role[0].toUpperCase());
-
-          dps = Number(dps);
-          if(!_.isFinite(dps)) dps = 0;
-          hps = Number(hps);
-          if(!_.isFinite(hps)) hps = 0;
-
-          crit = parseInt(crit.replace('%'));
-          if(!_.isFinite(crit)) crit = 0;
-
-          overheal = parseInt(overheal.replace('%'));
-          if(!_.isFinite(overheal)) {
-            overheal = 0;
-          } else {
-            overheal = Math.max(100 - overheal, 0);
-          }
-
-          const isMe = name.toLowerCase() === 'you' ? -1 : 1;
-          const showHPS = settings.showHPS && role === 'healer';
-
-          if(!job) return;
-
-          return {
-            name,
-            role,
-            roleIndex,
-            job,
-            jobIndex,
-
-            dps,
-            hps,
-
-            crit,
-            overheal,
-
-            isMe,
-            showHPS
-          };
-        }));
-
-        const sortedData = _.sortBy(cleanData, ['isMe', 'roleIndex', 'jobIndex', 'name']);
-        
-        partyList.forEach((meter, index) => {
-          if(index >= sortedData.length) {
-            meter.toggle(false);
-          } else {
-            try {
-              const data = sortedData[index];
-              meter.toggle(true);
-              const name = !settings._showNames ? undefined : data.name.split(' ').map(n => n[0]).concat([Math.floor(data.dps)]).join(' ');
-              if(data.showHPS) {
-                meter.setHealer(true);
-                meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal, name);
-              } else {
-                meter.setHealer(false);
-                meter.calcStates(data.dps, encDPS, data.crit, topDPS, undefined, name);
-              }
-            } catch(e) {
-              meter.calcStates(0, 0, 0, 1);
+      const sortedData = _.sortBy(cleanData, ['isMe', 'roleIndex', 'jobIndex', 'name']);
+      
+      partyList.forEach((meter, index) => {
+        if(index >= sortedData.length) {
+          meter.toggle(false);
+        } else {
+          try {
+            const data = sortedData[index];
+            meter.toggle(true);
+            const name = !settings._showNames ? undefined : data.name.split(' ').map(n => n[0]).concat([Math.floor(data.dps)]).join(' ');
+            if(data.showHPS) {
+              meter.setHealer(true);
+              meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal, name);
+            } else {
+              meter.setHealer(false);
+              meter.calcStates(data.dps, encDPS, data.crit, topDPS, undefined, name);
             }
+          } catch(e) {
+            meter.calcStates(0, 0, 0, 1);
           }
-        });
-      } catch (e) {
-        console.log(e);
-      }
+        }
+      });
     }
 }, 100);
 

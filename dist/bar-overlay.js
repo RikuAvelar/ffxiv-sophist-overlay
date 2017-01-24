@@ -1,5 +1,7 @@
 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -79,6 +81,11 @@ var Meter = function () {
       }
     }
   }, {
+    key: 'reset',
+    value: function reset() {
+      this.calcStates(0, 0, 0, 1, 1);
+    }
+  }, {
     key: 'toggle',
     value: function toggle(state) {
       if (state === undefined) {
@@ -101,6 +108,7 @@ var Meter = function () {
 }();
 
 var partyList = [];
+var lastUpdate = void 0;
 
 var init = function init() {
   var container = document.querySelector('#container');
@@ -114,136 +122,151 @@ var init = function init() {
 };
 
 var container = document.querySelector('#container');
+var logOnSleep = _.debounce(function () {
+  // Log last received event, for development and debug purposes
+  if (settings._logLastUpdate && lastUpdate) {
+    console.log(JSON.stringify(lastUpdate));
+    lastUpdate = undefined;
+  }
+}, 10000);
 
 var onUpdate = _.throttle(function (event) {
   var parseData = event.detail;
   if (!parseData.isActive) {
     container.classList.remove('active');
+    partyList.forEach(function (meter) {
+      meter.toggle(false);
+      meter.reset();
+    });
   } else {
-    try {
-      (function () {
-        container.classList.add('active');
+    var _ret = function () {
+      lastUpdate = _.clone(parseData);
+      logOnSleep();
+      container.classList.add('active');
 
-        var combatants = {};
-        var keys = _.keys(parseData.Combatant);
+      var combatants = {};
+      var keys = _.keys(parseData.Combatant);
 
-        if (keys.length < 12) {
-          combatants = _.extend(parseData.Combatant);
+      if (keys.length < 12) {
+        combatants = _.extend(parseData.Combatant);
+      } else {
+        combatants = {
+          'you': _.find(parseData.Combatant, function (c) {
+            return c.name.toLowerCase() === 'you';
+          }),
+          'top': _.maxBy(_.values(parseData.Combatant), function (c) {
+            return c.name.toLowerCase() === 'you' && c ? 0 : c.encdps;
+          })
+        };
+      }
+
+      var topDPS = Math.max.apply(Math, Object.values(combatants).map(function (member) {
+        return member.encdps;
+      }));
+      if (topDPS === Infinity) topDPS = 0.000001;
+
+      var topHPS = Math.max.apply(Math, Object.values(combatants).map(function (member) {
+        return member.enchps;
+      }));
+      if (topHPS === Infinity) topHPS = 0.000001;
+
+      var encDPS = parseData.Encounter.encdps;
+      if (encDPS === Infinity) encDPS = 0;
+
+      var ownData = _.find(combatants, function (data, name) {
+        return name.toLowerCase() === 'you';
+      });
+
+      if (!ownData) return {
+          v: void 0
+        };
+
+      var ownJob = ownData.Job;
+
+      var ownRole = Object.keys(settings.roles).find(function (role) {
+        return settings.roles[role].contains(ownJob.toUpperCase());
+      }) || 'dps';
+
+      var cleanData = _.compact(_.map(combatants, function (member) {
+        var name = member.name,
+            job = member.Job,
+            dps = member.encdps,
+            hps = member.enchps,
+            crit = member['crithit%'],
+            overheal = member['OverHealPct'];
+
+
+        var role = Object.keys(settings.roles).find(function (role) {
+          return settings.roles[role].contains(job.toUpperCase());
+        }) || 'dps';
+        var jobIndex = _.indexOf(settings.roles[role], job.toUpperCase());
+        var roleIndex = settings[ownRole].indexOf(role[0].toUpperCase());
+
+        dps = Number(dps);
+        if (!_.isFinite(dps)) dps = 0;
+        hps = Number(hps);
+        if (!_.isFinite(hps)) hps = 0;
+
+        crit = parseInt(crit.replace('%'));
+        if (!_.isFinite(crit)) crit = 0;
+
+        overheal = parseInt(overheal.replace('%'));
+        if (!_.isFinite(overheal)) {
+          overheal = 0;
         } else {
-          combatants = {
-            'you': _.find(parseData.Combatant, function (c) {
-              return c.name.toLowerCase() === 'you';
-            }),
-            'top': _.maxBy(parseData.Combatant, function (c) {
-              return c.name.toLowerCase() === 'you' ? 0 : c.encdps;
-            })
-          };
+          overheal = Math.max(100 - overheal, 0);
         }
 
-        var topDPS = Math.max.apply(Math, Object.values(combatants).map(function (member) {
-          return member.encdps;
-        }));
-        if (topDPS === Infinity) topDPS = 0.000001;
+        var isMe = name.toLowerCase() === 'you' ? -1 : 1;
+        var showHPS = settings.showHPS && role === 'healer';
 
-        var topHPS = Math.max.apply(Math, Object.values(combatants).map(function (member) {
-          return member.enchps;
-        }));
-        if (topHPS === Infinity) topHPS = 0.000001;
+        if (!job) return;
 
-        var encDPS = parseData.Encounter.encdps;
-        if (encDPS === Infinity) encDPS = 0;
+        return {
+          name: name,
+          role: role,
+          roleIndex: roleIndex,
+          job: job,
+          jobIndex: jobIndex,
 
-        var ownData = combatants[combatants.find(function (name) {
-          return name.toLowerCase() === 'you';
-        })];
+          dps: dps,
+          hps: hps,
 
-        var ownJob = ownData.Job;
+          crit: crit,
+          overheal: overheal,
 
-        var ownRole = Object.keys(settings.roles).find(function (role) {
-          return settings.roles[role].contains(ownJob.toUpperCase());
-        }) || 'dps';
+          isMe: isMe,
+          showHPS: showHPS
+        };
+      }));
 
-        var cleanData = _.compact(_.map(combatants, function (member) {
-          var name = member.name,
-              job = member.Job,
-              dps = member.encdps,
-              hps = member.enchps,
-              crit = member['crithit%'],
-              overheal = member['OverHealPct'];
+      var sortedData = _.sortBy(cleanData, ['isMe', 'roleIndex', 'jobIndex', 'name']);
 
-
-          var role = Object.keys(settings.roles).find(function (role) {
-            return settings.roles[role].contains(job.toUpperCase());
-          }) || 'dps';
-          var jobIndex = _.indexOf(settings.roles[role], job.toUpperCase());
-          var roleIndex = settings[ownRole].indexOf(role[0].toUpperCase());
-
-          dps = Number(dps);
-          if (!_.isFinite(dps)) dps = 0;
-          hps = Number(hps);
-          if (!_.isFinite(hps)) hps = 0;
-
-          crit = parseInt(crit.replace('%'));
-          if (!_.isFinite(crit)) crit = 0;
-
-          overheal = parseInt(overheal.replace('%'));
-          if (!_.isFinite(overheal)) {
-            overheal = 0;
-          } else {
-            overheal = Math.max(100 - overheal, 0);
-          }
-
-          var isMe = name.toLowerCase() === 'you' ? -1 : 1;
-          var showHPS = settings.showHPS && role === 'healer';
-
-          if (!job) return;
-
-          return {
-            name: name,
-            role: role,
-            roleIndex: roleIndex,
-            job: job,
-            jobIndex: jobIndex,
-
-            dps: dps,
-            hps: hps,
-
-            crit: crit,
-            overheal: overheal,
-
-            isMe: isMe,
-            showHPS: showHPS
-          };
-        }));
-
-        var sortedData = _.sortBy(cleanData, ['isMe', 'roleIndex', 'jobIndex', 'name']);
-
-        partyList.forEach(function (meter, index) {
-          if (index >= sortedData.length) {
-            meter.toggle(false);
-          } else {
-            try {
-              var data = sortedData[index];
-              meter.toggle(true);
-              var name = !settings._showNames ? undefined : data.name.split(' ').map(function (n) {
-                return n[0];
-              }).concat([Math.floor(data.dps)]).join(' ');
-              if (data.showHPS) {
-                meter.setHealer(true);
-                meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal, name);
-              } else {
-                meter.setHealer(false);
-                meter.calcStates(data.dps, encDPS, data.crit, topDPS, undefined, name);
-              }
-            } catch (e) {
-              meter.calcStates(0, 0, 0, 1);
+      partyList.forEach(function (meter, index) {
+        if (index >= sortedData.length) {
+          meter.toggle(false);
+        } else {
+          try {
+            var data = sortedData[index];
+            meter.toggle(true);
+            var name = !settings._showNames ? undefined : data.name.split(' ').map(function (n) {
+              return n[0];
+            }).concat([Math.floor(data.dps)]).join(' ');
+            if (data.showHPS) {
+              meter.setHealer(true);
+              meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal, name);
+            } else {
+              meter.setHealer(false);
+              meter.calcStates(data.dps, encDPS, data.crit, topDPS, undefined, name);
             }
+          } catch (e) {
+            meter.calcStates(0, 0, 0, 1);
           }
-        });
-      })();
-    } catch (e) {
-      console.log(e);
-    }
+        }
+      });
+    }();
+
+    if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
   }
 }, 100);
 

@@ -22,5 +22,6 @@ var JobSortSettings = {
 	showParty: true,
 
 	// ====== DEBUG OPTIONS ======
-	_showNames: false
+	_showNames: false,
+	_logLastUpdate: false
 }
