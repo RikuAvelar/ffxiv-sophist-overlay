@@ -26,6 +26,7 @@ var Meter = function () {
     this.critBar = document.createElement('div');
     this.dpsBar = document.createElement('div');
     this.label = document.createElement('label');
+    this.nameLabel = document.createElement('label');
 
     // Attach classes
     this.el.classList.add('hidden');
@@ -33,11 +34,14 @@ var Meter = function () {
     this.progBar.classList.add('progress');
     this.dpsBar.classList.add('progress-bar');
     this.critBar.classList.add('crit-bar');
+    this.label.classList.add('damage-label');
+    this.nameLabel.classList.add('name-label');
 
     // Create Hierarchy
 
     this.el.appendChild(this.progBar);
     this.el.appendChild(this.label);
+    this.el.appendChild(this.nameLabel);
 
     this.progBar.appendChild(this.dpsBar);
     this.progBar.appendChild(this.critBar);
@@ -74,11 +78,9 @@ var Meter = function () {
 
       this.dpsBar.style.width = dpsWeight + "%";
 
-      if (!name) {
-        this.label.innerText = Math.floor(personal);
-      } else {
-        this.label.innerText = name;
-      }
+      this.label.innerText = Math.floor(personal);
+
+      this.nameLabel.innerText = name || '';
     }
   }, {
     key: 'reset',
@@ -241,6 +243,7 @@ var onUpdate = _.throttle(function (event) {
       }));
 
       var sortedData = _.sortBy(cleanData, ['isMe', 'roleIndex', 'jobIndex', 'name']);
+      var jobCount = _.countBy(cleanData, 'job');
 
       partyList.forEach(function (meter, index) {
         if (index >= sortedData.length) {
@@ -249,9 +252,12 @@ var onUpdate = _.throttle(function (event) {
           try {
             var data = sortedData[index];
             meter.toggle(true);
-            var name = !settings._showNames ? undefined : data.name.split(' ').map(function (n) {
-              return n[0];
-            }).concat([Math.floor(data.dps)]).join(' ');
+            var name = void 0;
+            if (data.name.toLowerCase() != 'you' && (settings._showNames || jobCount[data.job] > 1)) {
+              name = data.name.split(' ').map(function (n) {
+                return n[0];
+              }).join(' ');
+            }
             if (data.showHPS) {
               meter.setHealer(true);
               meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal, name);

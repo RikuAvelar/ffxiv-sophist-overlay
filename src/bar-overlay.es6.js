@@ -16,6 +16,7 @@ class Meter {
     this.critBar = document.createElement('div');
     this.dpsBar = document.createElement('div');
     this.label = document.createElement('label');
+    this.nameLabel = document.createElement('label');
 
     // Attach classes
     this.el.classList.add('hidden');
@@ -23,11 +24,14 @@ class Meter {
     this.progBar.classList.add('progress');
     this.dpsBar.classList.add('progress-bar');
     this.critBar.classList.add('crit-bar');
+    this.label.classList.add('damage-label');
+    this.nameLabel.classList.add('name-label');
 
     // Create Hierarchy
 
     this.el.appendChild(this.progBar);
     this.el.appendChild(this.label);
+    this.el.appendChild(this.nameLabel);
 
     this.progBar.appendChild(this.dpsBar);
     this.progBar.appendChild(this.critBar);
@@ -61,11 +65,9 @@ class Meter {
 
     this.dpsBar.style.width = dpsWeight + "%";
 
-    if(!name) {
-      this.label.innerText = Math.floor(personal);
-    } else {
-      this.label.innerText = name;
-    }
+    this.label.innerText = Math.floor(personal);
+
+    this.nameLabel.innerText = name || '';
   }
 
   reset() {
@@ -204,6 +206,7 @@ const onUpdate = _.throttle((event) => {
       }));
 
       const sortedData = _.sortBy(cleanData, ['isMe', 'roleIndex', 'jobIndex', 'name']);
+      const jobCount = _.countBy(cleanData, 'job');
       
       partyList.forEach((meter, index) => {
         if(index >= sortedData.length) {
@@ -212,7 +215,10 @@ const onUpdate = _.throttle((event) => {
           try {
             const data = sortedData[index];
             meter.toggle(true);
-            const name = !settings._showNames ? undefined : data.name.split(' ').map(n => n[0]).concat([Math.floor(data.dps)]).join(' ');
+            let name;
+            if(data.name.toLowerCase() != 'you' && (settings._showNames || jobCount[data.job] > 1)) {
+              name = data.name.split(' ').map(n => n[0]).join(' ');
+            }
             if(data.showHPS) {
               meter.setHealer(true);
               meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal, name);
