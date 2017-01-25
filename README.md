@@ -32,8 +32,9 @@ This is actually a licensing issue. The ingame font used is called Eurostile Ext
 
 ## Roadmap
 
-- [ ] Create proper build scripts and whatnot for development
+- [x] Create proper build scripts and whatnot for development
 - [ ] Create a UI based settings editor for easier adjustments
-- [ ] Optimize mapping function in order to lower CPU costs
+- [x] Optimize mapping function in order to lower CPU costs
 - [ ] Find way to parse your own party in 24 man
 - [ ] If above is discovered, find way to show other Alliance DPS, to compare group DPS
+- [ ] Make a custom font just for this : it would be fun to include a font that closely resembles the real deal, without it being copyrighted.
