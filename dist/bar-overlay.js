@@ -152,12 +152,13 @@ var onUpdate = _.throttle(function (event) {
       if (keys.length < 12) {
         combatants = _.extend(parseData.Combatant);
       } else {
+        var youObj = _.find(parseData.Combatant, function (c) {
+          return c.name.toLowerCase() === 'you';
+        });
         combatants = {
-          'you': _.find(parseData.Combatant, function (c) {
-            return c.name.toLowerCase() === 'you';
-          }),
+          'you': youObj,
           'top': _.maxBy(_.values(parseData.Combatant), function (c) {
-            return c.name.toLowerCase() === 'you' && c ? 0 : c.encdps;
+            return c.name.toLowerCase() === 'you' && c ? 0 : Number(c.ENCDPS || c.encdps);
           })
         };
       }

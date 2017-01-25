@@ -132,9 +132,10 @@ const onUpdate = _.throttle((event) => {
       if(keys.length < 12) {
         combatants = _.extend(parseData.Combatant);
       } else {
+        const youObj = _.find(parseData.Combatant, (c) => c.name.toLowerCase() === 'you');
         combatants = {
-          'you': _.find(parseData.Combatant, (c) => c.name.toLowerCase() === 'you'),
-          'top': _.maxBy(_.values(parseData.Combatant), (c) => c.name.toLowerCase() === 'you' && c ? 0 : c.encdps)
+          'you': youObj,
+          'top': _.maxBy(_.values(parseData.Combatant), (c) => c.name.toLowerCase() === 'you' && c ? 0 : Number((c.ENCDPS || c.encdps)))
         };
       }
 
