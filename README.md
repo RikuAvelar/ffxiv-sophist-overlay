@@ -7,7 +7,7 @@ Sophist Overlay was created as a subtle addition to the game's UI. Its appearanc
 
 The idea was originally to have an overlay that did not distract me too much by not showing me directly other people's DPS. Naturally, one of the improvements I later made was to show other people's DPS, so that point's moot. Still, it shouldn't take up too much space or be too visually distracting as compared to some other alternatives.
 
-![DPS Meter Example](https://snag.gy/JA0G4N.jpg)
+![DPS Meter Example](https://snag.gy/lB782o.jpg)
 
 By default, the information shown corresponds to your DPS, with an extra bar to give you a rough idea of your Crit Percentage, and a visual representation of everyone's scale compared to each other. Plus, it even has a nice addition for Healers.
 
