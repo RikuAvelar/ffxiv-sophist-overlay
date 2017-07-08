@@ -13,13 +13,13 @@ const JobSortSettings = {
 	},
 
 	// Show HPS for Healer Bars
-	showHPS: true,
+	showHPS: false,
 
 	// Size of UI (default is 3)
 	uiSize: 3,
 
 	// Show rest of party
-	showParty: true,
+	showParty: false,
 
 	// ====== DEBUG OPTIONS ======
 	_showNames: false,

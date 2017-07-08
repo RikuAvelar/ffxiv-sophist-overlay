@@ -63,9 +63,8 @@
 /******/ 	return __webpack_require__(__webpack_require__.s = 0);
 /******/ })
 /************************************************************************/
-/******/ ({
-
-/***/ 0:
+/******/ ([
+/* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -75,7 +74,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _settings = __webpack_require__(6);
+var _settings = __webpack_require__(1);
 
 var _settings2 = _interopRequireDefault(_settings);
 
@@ -415,8 +414,7 @@ init();
 document.addEventListener('onOverlayDataUpdate', onUpdate);
 
 /***/ }),
-
-/***/ 6:
+/* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -440,13 +438,13 @@ var JobSortSettings = {
 	},
 
 	// Show HPS for Healer Bars
-	showHPS: true,
+	showHPS: false,
 
 	// Size of UI (default is 3)
 	uiSize: 3,
 
 	// Show rest of party
-	showParty: true,
+	showParty: false,
 
 	// ====== DEBUG OPTIONS ======
 	_showNames: false,
@@ -456,5 +454,4 @@ var JobSortSettings = {
 exports.default = JobSortSettings;
 
 /***/ })
-
-/******/ });
+/******/ ]);
