@@ -90,7 +90,7 @@ class Meter {
     } else {
       this.critBar.style.display = 'none';
     }
-    
+
     if(cdhWeight > 1) {
       this.cdhBar.style.width = cdhWeight + '%';
       this.cdhBar.style.display = 'block';
@@ -145,14 +145,12 @@ const container = document.querySelector('#container');
 const logOnSleep = _.debounce(() => {
   // Log last received event, for development and debug purposes
   if(settings._logLastUpdate && lastUpdate) {
-    console.log(JSON.stringify(lastUpdate));
     lastUpdate = undefined;
   }
 }, 10000);
 
 
 const onUpdate = _.throttle((event) => {
-  console.log(event.detail);
   const parseData = event.detail;
     if(!parseData.isActive) {
       console.log('inactive')

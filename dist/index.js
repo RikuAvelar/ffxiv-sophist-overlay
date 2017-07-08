@@ -251,13 +251,11 @@ var container = document.querySelector('#container');
 var logOnSleep = _.debounce(function () {
   // Log last received event, for development and debug purposes
   if (settings._logLastUpdate && lastUpdate) {
-    console.log(JSON.stringify(lastUpdate));
     lastUpdate = undefined;
   }
 }, 10000);
 
 var onUpdate = _.throttle(function (event) {
-  console.log(event.detail);
   var parseData = event.detail;
   if (!parseData.isActive) {
     console.log('inactive');
