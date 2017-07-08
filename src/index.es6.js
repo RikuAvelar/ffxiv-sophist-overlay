@@ -1,3 +1,5 @@
+import JobSortSettings from '../settings.es6';
+
 const ANIMATION_TIME = 2000;
 const DPS_CEILING = 4000;
 const settings = JobSortSettings;
@@ -14,6 +16,8 @@ class Meter {
     this.el = document.createElement('div');
     this.progBar = document.createElement('div');
     this.critBar = document.createElement('div');
+    this.dhBar = document.createElement('div');
+    this.cdhBar = document.createElement('div');
     this.dpsBar = document.createElement('div');
     this.label = document.createElement('label');
     this.nameLabel = document.createElement('label');
@@ -24,6 +28,8 @@ class Meter {
     this.progBar.classList.add('progress');
     this.dpsBar.classList.add('progress-bar');
     this.critBar.classList.add('crit-bar');
+    this.dhBar.classList.add('direct-hit-bar');
+    this.cdhBar.classList.add('direct-hit-crit-bar');
     this.label.classList.add('damage-label');
     this.nameLabel.classList.add('name-label');
 
@@ -35,6 +41,11 @@ class Meter {
 
     this.progBar.appendChild(this.dpsBar);
     this.progBar.appendChild(this.critBar);
+    this.progBar.appendChild(this.dhBar);
+    this.progBar.appendChild(this.cdhBar);
+
+    this.reset();
+    this.toggle(false);
   }
 
   setHealer(state) {
@@ -47,7 +58,11 @@ class Meter {
     }
   }
 
-  calcStates(personal, total, crit, top, barWeight, name) {
+  oldCalcStates(personal, total, crit, top, barWeight, name) {
+    return this.calcStates({personal, total, crit, top, barWeight, name})
+  }
+
+  calcStates({personal, total, crit, directHit, critDirectHit, top, barWeight, name}) {
     let dpsWeight = ((personal / top) * 100);
 
     if(barWeight !== undefined) {
@@ -55,12 +70,33 @@ class Meter {
     }
 
     const critWeight = (crit / 100 * dpsWeight);
+    const dhWeight = (directHit / 100 * dpsWeight);
+    const cdhWeight = (critDirectHit / 100 * dpsWeight);
+
+    const indexList = [critWeight, dhWeight, cdhWeight].sort((a,b) => b - a);
+
+    if(dhWeight > 1) {
+      this.dhBar.style.width = dhWeight + '%';
+      this.dhBar.style.display = 'block';
+      this.dhBar.style.zIndex = indexList.indexOf(dhWeight);
+    } else {
+      this.dhBar.style.display = 'none';
+    }
 
     if(critWeight > 1) {
-      this.critBar.style.width = (crit / 100 * dpsWeight) + '%';
+      this.critBar.style.width = critWeight + '%';
       this.critBar.style.display = 'block';
+      this.critBar.style.zIndex = indexList.indexOf(critWeight);
     } else {
       this.critBar.style.display = 'none';
+    }
+    
+    if(cdhWeight > 1) {
+      this.cdhBar.style.width = cdhWeight + '%';
+      this.cdhBar.style.display = 'block';
+      this.cdhBar.style.zIndex = indexList.indexOf(cdhWeight);
+    } else {
+      this.cdhBar.style.display = 'none';
     }
 
     this.dpsBar.style.width = dpsWeight + "%";
@@ -71,7 +107,7 @@ class Meter {
   }
 
   reset() {
-    this.calcStates(0, 0, 0, 1, 1);
+    this.oldCalcStates(0, 0, 0, 1, 1);
   }
 
   toggle(state) {
@@ -98,6 +134,7 @@ const init = () => {
   const partyCount = settings.showParty ? 8 : 1;
   for(let i = 0; i < partyCount; i++) {
     const meter = new Meter();
+    meter.reset();
     partyList.push(meter);
     meter.appendTo(container);
   }
@@ -113,9 +150,12 @@ const logOnSleep = _.debounce(() => {
   }
 }, 10000);
 
+
 const onUpdate = _.throttle((event) => {
+  console.log(event.detail);
   const parseData = event.detail;
     if(!parseData.isActive) {
+      console.log('inactive')
       container.classList.remove('active');
       partyList.forEach(meter => {
         meter.toggle(false);
@@ -162,7 +202,7 @@ const onUpdate = _.throttle((event) => {
       const ownRole = Object.keys(settings.roles).find((role) => settings.roles[role].contains(ownJob.toUpperCase())) || 'dps';
 
       const cleanData = _.compact(_.map(combatants, (member) => {
-        let {name, Job: job, encdps: dps, enchps: hps, 'crithit%': crit, 'OverHealPct': overheal} = member;
+        let {name, Job: job, encdps: dps, enchps: hps, 'crithit%': crit, 'OverHealPct': overheal, 'DirectHitPct': directHit, 'CritDirectHitPct': critDirectHit} = member;
 
         const role = Object.keys(settings.roles).find((role) => settings.roles[role].contains(job.toUpperCase())) || 'dps';
         const jobIndex = _.indexOf(settings.roles[role], job.toUpperCase());
@@ -175,6 +215,12 @@ const onUpdate = _.throttle((event) => {
 
         crit = parseInt(crit.replace('%'));
         if(!_.isFinite(crit)) crit = 0;
+
+        directHit = parseInt(directHit.replace('%'));
+        if(!_.isFinite(directHit)) directHit = 0;
+
+        critDirectHit = parseInt(critDirectHit.replace('%'));
+        if(!_.isFinite(critDirectHit)) critDirectHit = 0;
 
         overheal = parseInt(overheal.replace('%'));
         if(!_.isFinite(overheal)) {
@@ -199,6 +245,8 @@ const onUpdate = _.throttle((event) => {
           hps,
 
           crit,
+          directHit,
+          critDirectHit,
           overheal,
 
           isMe,
@@ -222,10 +270,10 @@ const onUpdate = _.throttle((event) => {
             }
             if(data.showHPS) {
               meter.setHealer(true);
-              meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal, name);
+              meter.calcStates({personal: data.hps, total: 0, directHit: data.directHit, critDirectHit: data.critDirectHit, crit: data.crit, top: topHPS, barWeight: data.overheal, name});
             } else {
               meter.setHealer(false);
-              meter.calcStates(data.dps, encDPS, data.crit, topDPS, undefined, name);
+              meter.calcStates({personal: data.dps, total: encDPS, directHit: data.directHit, critDirectHit: data.critDirectHit, crit: data.crit, top: topDPS, barWeight: undefined, name});
             }
           } catch(e) {
             meter.calcStates(0, 0, 0, 1);

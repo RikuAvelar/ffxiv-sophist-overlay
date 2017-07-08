@@ -1,14 +1,91 @@
-'use strict';
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId]) {
+/******/ 			return installedModules[moduleId].exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, {
+/******/ 				configurable: false,
+/******/ 				enumerable: true,
+/******/ 				get: getter
+/******/ 			});
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = 0);
+/******/ })
+/************************************************************************/
+/******/ ({
+
+/***/ 0:
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _settings = __webpack_require__(6);
+
+var _settings2 = _interopRequireDefault(_settings);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var ANIMATION_TIME = 2000;
 var DPS_CEILING = 4000;
-var settings = JobSortSettings;
+var settings = _settings2.default;
 
 if (!Array.prototype.contains) {
   Array.prototype.contains = function (search) {
@@ -24,6 +101,8 @@ var Meter = function () {
     this.el = document.createElement('div');
     this.progBar = document.createElement('div');
     this.critBar = document.createElement('div');
+    this.dhBar = document.createElement('div');
+    this.cdhBar = document.createElement('div');
     this.dpsBar = document.createElement('div');
     this.label = document.createElement('label');
     this.nameLabel = document.createElement('label');
@@ -34,6 +113,8 @@ var Meter = function () {
     this.progBar.classList.add('progress');
     this.dpsBar.classList.add('progress-bar');
     this.critBar.classList.add('crit-bar');
+    this.dhBar.classList.add('direct-hit-bar');
+    this.cdhBar.classList.add('direct-hit-crit-bar');
     this.label.classList.add('damage-label');
     this.nameLabel.classList.add('name-label');
 
@@ -45,6 +126,11 @@ var Meter = function () {
 
     this.progBar.appendChild(this.dpsBar);
     this.progBar.appendChild(this.critBar);
+    this.progBar.appendChild(this.dhBar);
+    this.progBar.appendChild(this.cdhBar);
+
+    this.reset();
+    this.toggle(false);
   }
 
   _createClass(Meter, [{
@@ -59,8 +145,22 @@ var Meter = function () {
       }
     }
   }, {
+    key: 'oldCalcStates',
+    value: function oldCalcStates(personal, total, crit, top, barWeight, name) {
+      return this.calcStates({ personal: personal, total: total, crit: crit, top: top, barWeight: barWeight, name: name });
+    }
+  }, {
     key: 'calcStates',
-    value: function calcStates(personal, total, crit, top, barWeight, name) {
+    value: function calcStates(_ref) {
+      var personal = _ref.personal,
+          total = _ref.total,
+          crit = _ref.crit,
+          directHit = _ref.directHit,
+          critDirectHit = _ref.critDirectHit,
+          top = _ref.top,
+          barWeight = _ref.barWeight,
+          name = _ref.name;
+
       var dpsWeight = personal / top * 100;
 
       if (barWeight !== undefined) {
@@ -68,12 +168,35 @@ var Meter = function () {
       }
 
       var critWeight = crit / 100 * dpsWeight;
+      var dhWeight = directHit / 100 * dpsWeight;
+      var cdhWeight = critDirectHit / 100 * dpsWeight;
+
+      var indexList = [critWeight, dhWeight, cdhWeight].sort(function (a, b) {
+        return b - a;
+      });
+
+      if (dhWeight > 1) {
+        this.dhBar.style.width = dhWeight + '%';
+        this.dhBar.style.display = 'block';
+        this.dhBar.style.zIndex = indexList.indexOf(dhWeight);
+      } else {
+        this.dhBar.style.display = 'none';
+      }
 
       if (critWeight > 1) {
-        this.critBar.style.width = crit / 100 * dpsWeight + '%';
+        this.critBar.style.width = critWeight + '%';
         this.critBar.style.display = 'block';
+        this.critBar.style.zIndex = indexList.indexOf(critWeight);
       } else {
         this.critBar.style.display = 'none';
+      }
+
+      if (cdhWeight > 1) {
+        this.cdhBar.style.width = cdhWeight + '%';
+        this.cdhBar.style.display = 'block';
+        this.cdhBar.style.zIndex = indexList.indexOf(cdhWeight);
+      } else {
+        this.cdhBar.style.display = 'none';
       }
 
       this.dpsBar.style.width = dpsWeight + "%";
@@ -85,7 +208,7 @@ var Meter = function () {
   }, {
     key: 'reset',
     value: function reset() {
-      this.calcStates(0, 0, 0, 1, 1);
+      this.oldCalcStates(0, 0, 0, 1, 1);
     }
   }, {
     key: 'toggle',
@@ -117,6 +240,7 @@ var init = function init() {
   var partyCount = settings.showParty ? 8 : 1;
   for (var i = 0; i < partyCount; i++) {
     var meter = new Meter();
+    meter.reset();
     partyList.push(meter);
     meter.appendTo(container);
   }
@@ -133,8 +257,10 @@ var logOnSleep = _.debounce(function () {
 }, 10000);
 
 var onUpdate = _.throttle(function (event) {
+  console.log(event.detail);
   var parseData = event.detail;
   if (!parseData.isActive) {
+    console.log('inactive');
     container.classList.remove('active');
     partyList.forEach(function (meter) {
       meter.toggle(false);
@@ -196,7 +322,9 @@ var onUpdate = _.throttle(function (event) {
             dps = member.encdps,
             hps = member.enchps,
             crit = member['crithit%'],
-            overheal = member['OverHealPct'];
+            overheal = member['OverHealPct'],
+            directHit = member['DirectHitPct'],
+            critDirectHit = member['CritDirectHitPct'];
 
 
         var role = Object.keys(settings.roles).find(function (role) {
@@ -212,6 +340,12 @@ var onUpdate = _.throttle(function (event) {
 
         crit = parseInt(crit.replace('%'));
         if (!_.isFinite(crit)) crit = 0;
+
+        directHit = parseInt(directHit.replace('%'));
+        if (!_.isFinite(directHit)) directHit = 0;
+
+        critDirectHit = parseInt(critDirectHit.replace('%'));
+        if (!_.isFinite(critDirectHit)) critDirectHit = 0;
 
         overheal = parseInt(overheal.replace('%'));
         if (!_.isFinite(overheal)) {
@@ -236,6 +370,8 @@ var onUpdate = _.throttle(function (event) {
           hps: hps,
 
           crit: crit,
+          directHit: directHit,
+          critDirectHit: critDirectHit,
           overheal: overheal,
 
           isMe: isMe,
@@ -261,10 +397,10 @@ var onUpdate = _.throttle(function (event) {
             }
             if (data.showHPS) {
               meter.setHealer(true);
-              meter.calcStates(data.hps, 0, data.crit, topHPS, data.overheal, name);
+              meter.calcStates({ personal: data.hps, total: 0, directHit: data.directHit, critDirectHit: data.critDirectHit, crit: data.crit, top: topHPS, barWeight: data.overheal, name: name });
             } else {
               meter.setHealer(false);
-              meter.calcStates(data.dps, encDPS, data.crit, topDPS, undefined, name);
+              meter.calcStates({ personal: data.dps, total: encDPS, directHit: data.directHit, critDirectHit: data.critDirectHit, crit: data.crit, top: topDPS, barWeight: undefined, name: name });
             }
           } catch (e) {
             meter.calcStates(0, 0, 0, 1);
@@ -279,3 +415,48 @@ var onUpdate = _.throttle(function (event) {
 
 init();
 document.addEventListener('onOverlayDataUpdate', onUpdate);
+
+/***/ }),
+
+/***/ 6:
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+var JobSortSettings = {
+	// Role Sort
+	tank: 'THD',
+	healer: 'THD',
+	dps: 'TDH',
+	other: 'THD',
+
+	// Job Sort
+	roles: {
+		tank: ['PLD', 'GLD', 'WAR', 'MRD', 'DRK'],
+		healer: ['WHM', 'CNJ', 'SCH', 'AST'],
+		dps: ['MNK', 'PGL', 'NIN', 'ROG', 'SAM', 'BRD', 'ARC', 'MCH', 'BLM', 'THM', 'SMN', 'ACN', 'RDM']
+	},
+
+	// Show HPS for Healer Bars
+	showHPS: true,
+
+	// Size of UI (default is 3)
+	uiSize: 3,
+
+	// Show rest of party
+	showParty: true,
+
+	// ====== DEBUG OPTIONS ======
+	_showNames: false,
+	_logLastUpdate: false
+};
+
+exports.default = JobSortSettings;
+
+/***/ })
+
+/******/ });

@@ -1,4 +1,4 @@
-var JobSortSettings = {
+const JobSortSettings = {
 	// Role Sort
 	tank: 'THD',
 	healer: 'THD',
@@ -9,7 +9,7 @@ var JobSortSettings = {
 	roles: {
 		tank: ['PLD', 'GLD', 'WAR', 'MRD', 'DRK'],
 		healer: ['WHM', 'CNJ', 'SCH', 'AST'],
-		dps: ['MNK', 'PGL', 'NIN', 'ROG', 'BRD', 'ARC', 'MCH', 'BLM', 'THM', 'SMN', 'ACN']
+		dps: ['MNK', 'PGL', 'NIN', 'ROG', 'SAM', 'BRD', 'ARC', 'MCH', 'BLM', 'THM', 'SMN', 'ACN', 'RDM']
 	},
 
 	// Show HPS for Healer Bars
@@ -24,4 +24,6 @@ var JobSortSettings = {
 	// ====== DEBUG OPTIONS ======
 	_showNames: false,
 	_logLastUpdate: false
-}
+};
+
+export default JobSortSettings;
